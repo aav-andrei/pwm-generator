@@ -15,14 +15,6 @@ module top(
     output pwm_out
 );
 
-wire clk;
-wire rst_n;
-
-wire sclk;
-wire cs_n;
-wire miso;
-wire mosi;
-
 wire byte_sync;
 wire[7:0] data_in;
 wire[7:0] data_out;
