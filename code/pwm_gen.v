@@ -10,32 +10,50 @@ module pwm_gen (
     output reg pwm_out
 );
 
-    wire align       = functions[0];
-    wire unaligned   = functions[1];
+    // functions[0] = align (0: ALIGN_LEFT, 1: ALIGN_RIGHT)
+    // functions[1] = unaligned (0: mod aliniat, 1: mod intre comparatoare)
+    wire align     = functions[0];
+    wire unaligned = functions[1];
 
     always @(posedge clk or negedge rst_n) begin
-        if (!rst_n)
+        if (!rst_n) begin
             pwm_out <= 1'b0;
-        else if (!pwm_en)
-            pwm_out <= pwm_out;
-        else begin
-            if (!unaligned) begin
-                if (!align) begin
-                    if (count_val == 16'd0)
-                        pwm_out <= 1'b1;
-                    else if (count_val == compare1)
-                        pwm_out <= 1'b0;
-                end else begin
-                    if (count_val == 16'd0)
-                        pwm_out <= 1'b0;
-                    else if (count_val == compare1)
-                        pwm_out <= 1'b1;
-                end
+
+        end else if (!pwm_en) begin
+            // PWM dezactivat fortam iesirea LOW
+            pwm_out <= 1'b0;
+
+        end else begin
+            if (compare1 == compare2) begin
+                pwm_out <= 1'b0;
+
             end else begin
-                if (count_val == compare1)
-                    pwm_out <= 1'b1;
-                else if (count_val == compare2)
-                    pwm_out <= 1'b0;
+                if (!unaligned) begin
+
+                    if (!align) begin
+                        if (compare1 == 16'd0) begin
+                            pwm_out <= 1'b0;
+                        end else begin
+                            if (count_val == 16'd0)
+                                pwm_out <= 1'b1;
+
+                            if (count_val == (compare1 + 16'd1))
+                                pwm_out <= 1'b0;
+                        end
+
+                    end else begin
+                        if (count_val == 16'd0)
+                            pwm_out <= 1'b0;
+                        else if (count_val == compare1)
+                            pwm_out <= 1'b1;
+                    end
+
+                end else begin
+                    if (count_val == compare1)
+                        pwm_out <= 1'b1;
+                    else if (count_val == compare2)
+                        pwm_out <= 1'b0;
+                end
             end
         end
     end
