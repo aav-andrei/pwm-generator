@@ -1,0 +1,105 @@
+\documentclass[a4paper,12pt]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[romanian]{babel}
+\usepackage{geometry}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{hyperref}
+\usepackage{listings}
+\usepackage{xcolor}
+
+\geometry{margin=2.5cm}
+
+\lstset{
+    basicstyle=\ttfamily\small,
+    keywordstyle=\color{blue},
+    commentstyle=\color{gray},
+    numbers=left,
+    numberstyle=\tiny,
+    breaklines=true,
+    frame=single
+}
+
+\title{Proiectarea si Implementarea unui Periferic PWM\\
+Controlat prin Interfata SPI}
+\author{Avarvarei Andrei-Alexandru \\ Ilie Eduard Cristian \\ Echipa 3}
+
+\begin{document}
+
+\maketitle
+\tableofcontents
+\newpage
+
+\section{Introducere}
+
+Acest document descrie soluțiile adoptate pentru proiectarea și implementarea unui periferic hardware PWM (Pulse Width Modulation), care poate fi configurat printr-o interfață SPI. Proiectul a fost realizat conform specificațiilor temei, având ca scop principal crearea unui sistem modular, configurabil și fiabil.
+
+Perifericul permite controlul complet al semnalului PWM, inclusiv perioada, factorul de umplere, modul de aliniere și direcția de numărare, prin scrierea în registre interne accesibile unui master SPI extern. Documentația se concentrează pe detaliile implementării și pe provocările apărute în timpul integrării sistemului.
+
+\section{Arhitectura generala a sistemului}
+
+Sistemul este organizat modular si este compus din mai multe blocuri functionale, fiecare avand o responsabilitate bine definita. Aceasta abordare a permis dezvoltarea si testarea individuala a modulelor, urmata de integrarea acestora in modulul de top.
+
+Fluxul de date este urmatorul: semnalele seriale sunt receptionate prin interfata SPI, sunt decodificate in comenzi interne, stocate in banca de registre si utilizate ulterior de numarator si de generatorul PWM pentru sinteza semnalului de iesire.
+
+\section{Analiza detaliata a implementarii}
+
+\subsection{Interfata fizica si sincronizarea semnalelor (spi\_bridge.v)}
+
+Modulul spi\_bridge reprezinta interfata directa cu exteriorul si implementeaza protocolul SPI in modul CPOL=0, CPHA=0. Datele sunt esantionate pe frontul crescator al semnalului sclk, iar iesirea miso este actualizata pe frontul descrescator.
+
+Semnalele sclk si cs\_n sunt asincrone fata de ceasul intern al sistemului, motiv pentru care sunt tratate cu atentie pentru a evita probleme de metastabilitate. Receptia unui byte complet este semnalizata prin impulsul byte\_sync, utilizat de etajele superioare pentru delimitarea comenzilor SPI.
+
+\subsection{Decodificarea instructiunilor (instr\_dcd.v)}
+
+Modulul instr\_dcd este responsabil de interpretarea fluxului de date provenit de la spi\_bridge. Decodificarea se face folosind o structura secventiala cu doua etape: receptionarea header-ului, care contine tipul operatiei si adresa, urmata de receptionarea datelor in cazul unei operatii de scriere.
+
+Semnalele de control read si write sunt generate sub forma de impulsuri de un singur ciclu de ceas, pentru a preveni scrieri multiple neintentionate in banca de registre.
+
+\subsection{Banca de registre si logica de auto-clear (regs.v)}
+
+Modulul regs gestioneaza stocarea tuturor parametrilor de configurare ai perifericului. Registrele de 16 biti sunt accesate prin doua operatii succesive pe magistrala SPI, una pentru octetul inferior si una pentru octetul superior.
+
+Un registru special este cel de resetare software a numaratorului. Acesta este implementat cu o logica de tip auto-clear, astfel incat, dupa activarea resetului printr-o scriere SPI, semnalul este dezactivat automat de hardware dupa un numar redus de cicluri de ceas. Aceasta solutie reduce incarcarea magistralei si simplifica controlul din software.
+
+\subsection{Numaratorul si prescaler-ul (counter.v)}
+
+Modulul counter reprezinta baza de timp a sistemului. Acesta suporta numarare crescatoare sau descrescatoare, resetare la atingerea valorii period si utilizarea unui prescaler configurabil.
+
+Prescaler-ul este implementat eficient folosind deplasari logice pe biti, conform relatiei:
+\[
+Limit = 2^{prescale}
+\]
+Aceasta metoda este optima din punct de vedere al resurselor hardware utilizate.
+
+\subsection{Generatorul PWM (pwm\_gen.v)}
+
+Modulul pwm\_gen utilizeaza valoarea curenta a numaratorului si registrele de comparatie pentru a genera semnalul PWM. Sunt implementate mai multe moduri de functionare, incluzand alinierea la stanga, alinierea la dreapta si modul nealiniat intre doua valori de comparatie.
+
+Pentru siguranta sistemului, iesirea PWM este conditionata de semnalul pwm\_en. Atunci cand acest semnal este dezactivat, iesirea este fortata la nivel logic zero, prevenind aparitia de impulsuri nedorite in timpul configurarii.
+
+\section{Corectarea modulului top.v}
+
+Fisierul top.v primit initial continea mai multe probleme structurale care impiedicau functionarea corecta a sistemului.
+
+Prima problema a fost redeclararea porturilor de intrare si iesire ca semnale interne de tip wire. In Verilog, porturile sunt implicit de tip wire, iar redeclararea lor poate conduce la erori de compilare sau la conectari incorecte intre module.
+
+A doua problema majora a fost conectarea incompleta a modulului spi\_bridge. Semnalele esentiale pentru comunicarea SPI, respectiv byte\_sync, data\_in si data\_out, nu erau conectate catre modulele instr\_dcd si regs. Din aceasta cauza, comenzile SPI nu erau decodificate, registrele nu erau programate, iar perifericul ramanea in stare inactiva.
+
+In implementarea finala, aceste probleme au fost corectate prin eliminarea redeclararilor ilegale ale porturilor si prin conectarea completa a interfetei SPI intre module, fara a modifica interfata externa a modulului top. Astfel, compatibilitatea cu testbench-ul primit a fost pastrata.
+
+\section{Simulare si validare}
+
+Validarea functionala a fost realizata prin simulare, folosind testbench-ul primit. Valorile necunoscute observate la inceputul simularii sunt normale si apar din cauza initializarii semnalelor inainte de aplicarea resetului global.
+
+Dupa configurarea corecta a registrelor prin SPI, numaratorul incepe sa functioneze conform parametrilor setati, iar semnalul PWM generat respecta caracteristicile asteptate.
+
+\section{Concluzii}
+
+Proiectul a demonstrat implementarea completa a unui periferic PWM configurabil prin interfata SPI. Principalele dificultati intampinate au fost legate de integrarea corecta a modulelor si de conectivitatea semnalelor, nu de logica interna a acestora.
+
+Solutiile adoptate au permis obtinerea unui sistem functional, robust si extensibil, care respecta specificatiile temei.
+
+\end{document}

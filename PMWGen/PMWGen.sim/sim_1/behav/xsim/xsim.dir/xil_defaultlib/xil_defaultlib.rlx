@@ -3,8 +3,8 @@
 Apr 18 2022
 16:05:34
 C:/Users/andre/Desktop/pwm-generator/PMWGen/PMWGen.sim/sim_1/behav/xsim/glbl.v,1649976174,verilog,,,,glbl,,,,,,,,
-C:/Users/andre/Desktop/pwm-generator/code/counter.v,1765544837,verilog,,C:/Users/andre/Desktop/pwm-generator/code/instr_dcd.v,,counter,,,,,,,,
-C:/Users/andre/Desktop/pwm-generator/code/instr_dcd.v,1765544827,verilog,,C:/Users/andre/Desktop/pwm-generator/code/pwm_gen.v,,instr_dcd,,,,,,,,
+C:/Users/andre/Desktop/pwm-generator/code/counter.v,1765715207,verilog,,C:/Users/andre/Desktop/pwm-generator/code/instr_dcd.v,,counter,,,,,,,,
+C:/Users/andre/Desktop/pwm-generator/code/instr_dcd.v,1765715253,verilog,,C:/Users/andre/Desktop/pwm-generator/code/pwm_gen.v,,instr_dcd,,,,,,,,
 C:/Users/andre/Desktop/pwm-generator/code/pwm_gen.v,1765545174,verilog,,C:/Users/andre/Desktop/pwm-generator/code/regs.v,,pwm_gen,,,,,,,,
 C:/Users/andre/Desktop/pwm-generator/code/regs.v,1765544949,verilog,,C:/Users/andre/Desktop/pwm-generator/code/spi_bridge.v,,regs,,,,,,,,
 C:/Users/andre/Desktop/pwm-generator/code/spi_bridge.v,1765544818,verilog,,C:/Users/andre/Desktop/pwm-generator/code/top.v,,spi_bridge,,,,,,,,
